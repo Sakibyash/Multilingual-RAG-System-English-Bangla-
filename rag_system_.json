@@ -1,0 +1,447 @@
+{
+  "name": "rag_system_final",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "ragg",
+          "mode": "list",
+          "cachedResultName": "ragg"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        -32
+      ],
+      "id": "cad87e65-b121-4271-a237-2e50b67bcd04",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "mla0x34i2P3ojvjL",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an intelligent, multilingual AI assistant operating within a Retrieval-Augmented Generation (RAG) framework designed to handle queries in both English and Bangla.\n\nYour response generation must strictly follow this retrieval and reasoning sequence:\n\n1. **Primary Retrieval:** Begin by querying the vector store to retrieve the most semantically relevant information. The vector store contains preprocessed and chunked documents, optimized for high-quality semantic search.\n\n2. **Secondary Context (Fallback):** If the vector store does not return sufficient or relevant context, refer to the recent chat history (short-term memory) to supplement or clarify the query.\n\n3. **Answer Generation:** Generate an answer only if it is grounded in the retrieved context—either from the vector store or memory. Do not generate responses based on assumptions or unsupported general knowledge.\n\n4. **Transparency on Limitations:** If no adequate information is available in either the vector database or memory, acknowledge the limitation and inform the user clearly rather than speculating.\n\n**Language Handling:** Always respond in the same language as the user’s query. Maintain a clear, respectful, and informative tone.\n\n**Your objectives:**\n- Provide accurate, contextually grounded answers\n- Ensure the use of verified and retrieved data\n- Avoid hallucinations or unsupported claims\n- Operate transparently and responsibly in multilingual settings\n\nYou are a retrieval-first AI agent. All responses must be supported by explicit, retrieved context."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        -32
+      ],
+      "id": "22ecd3b2-a433-4902-85d7-10865d747c18",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "read and answer my data",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "ragg",
+          "mode": "list",
+          "cachedResultName": "ragg"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1472,
+        176
+      ],
+      "id": "c58251f9-9223-496f-adab-f286fa3415f6",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "mla0x34i2P3ojvjL",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Upload your data to test RAG",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload your file(s)",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf, .csv",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        -32
+      ],
+      "id": "6e6915bd-f189-4a81-97d6-4a840a74d9d3",
+      "name": "Upload your file here",
+      "webhookId": "82848bc4-5ea2-4e5a-8bb6-3c09b94a8c5d"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        -32
+      ],
+      "id": "b6cf69ea-3572-41fb-88ee-5b4473bffbc0",
+      "name": "When chat message received",
+      "webhookId": "4091fa09-fb9a-4039-9411-7104d213f601"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:1b",
+        "options": {
+          "temperature": 0.5,
+          "topK": -1,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        176
+      ],
+      "id": "071668f4-4d30-4f83-a8dc-d27299180b8c",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "MdEVLMQj3pirF7TT",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  const score = item.json.score || 0;\n  const text = item.json.text || '';\n  const bm25Score = item.json.bm25Score || 0;\n  const isRelevant = score >= 0.85 && bm25Score >= 0.5 && (text.includes('কল্যাণী') || text.includes('বিয়ে'));\n  console.log('Chunk:', { text, score, bm25Score, isRelevant });\n  return isRelevant ? item : null;\n}).filter(item => item !== null);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        -176
+      ],
+      "id": "b1767091-4cf1-4f20-a1f6-475ee6aab35c",
+      "name": "Log Retrieved Chunks"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api.ocr.space/parse/image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filetype",
+              "value": "pdf"
+            },
+            {
+              "name": "language ",
+              "value": "ben"
+            },
+            {
+              "name": "isOverlayRequired",
+              "value": "true"
+            },
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        80,
+        -32
+      ],
+      "id": "c5c9d149-df20-42e5-b2f5-57dc6ad19859",
+      "name": "OCR Service",
+      "credentials": {
+        "actionNetworkApi": {
+          "id": "JRIaqgp6KbQcVLQ1",
+          "name": "Action Network account"
+        },
+        "activeCampaignApi": {
+          "id": "MXgSiMV6bI1ceHFq",
+          "name": "ActiveCampaign account"
+        },
+        "httpHeaderAuth": {
+          "id": "8EyScvd1n5hQ3h7V",
+          "name": "Header Auth account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        160
+      ],
+      "id": "8d414311-3c52-478b-8d00-aef55092f21e",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst stopwords = ['এবং', 'ও', 'কিন্তু', 'যে', 'এ', 'ঐ', 'সে', 'তার', 'এর', 'থেকে', 'এই', 'ওই', 'হয়', 'না', 'কি', 'কেন', 'কিভাবে', 'যিনি', 'তিনি', 'আর', 'করে', 'হয়েছে', 'জন্য', 'সঙ্গে', 'এটি', 'তাহলে', 'করা', 'যায়', 'একটি', 'হতে', 'করেন', 'ছিল'];\nconst devanagariPattern = /[\\u0900-\\u097F]/g;\nreturn items.map(item => {\n  let text = item.json.text || '';\n  let metadata = item.json.metadata || {};\n  // Check if text is valid JSON\n  try {\n    if (typeof text === 'string' && text.startsWith('{') && text.endsWith('}')) {\n      text = JSON.parse(text).text || '';\n    }\n  } catch (e) {\n    console.log('Invalid JSON detected:', text);\n    metadata.reprocess = true;\n  }\n  // Check for excessive Devanagari characters\n  const devanagariCount = (text.match(devanagariPattern) || []).length;\n  if (devanagariCount > text.length * 0.5) {\n    console.log('Excessive Devanagari detected, marking for reprocessing');\n    return { json: { text: '', metadata: { reprocess: true } } };\n  }\n  // Clean text: Keep numbers near key terms, remove others\n  text = text.replace(/\\s+/g, ' ').replace(/(?<!কল্যাণী|বিয়ে)\\b[0-9]+\\s*(বছর|years?|পৃষ্ঠা|page|header|footer)\\b/gi, '').replace(/[^\\w\\s\\u0980-\\u09FF]/g, '').trim();\n  // Call NLP service\n  try {\n    const response = $http.post('http://localhost:5000/preprocess', { text }).data;\n    text = response.text || '';\n  } catch (e) {\n    console.log('NLP service error:', e.message);\n    metadata.nlp_error = e.message;\n  }\n  return { json: { text, metadata } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -32
+      ],
+      "id": "76ad1724-4411-4f52-aa45-ab56072b1009",
+      "name": "Preprocess Text"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:1b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        880,
+        448
+      ],
+      "id": "7411d2b6-2fc6-4978-aca0-1963fed24250",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "MdEVLMQj3pirF7TT",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "\n",
+        "height": 224,
+        "width": 544,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "0e4d0e1a-e3f1-46c9-979e-15dcba431052",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 528,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "14e7541b-15eb-4ee0-b330-c3fb4541f332",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 400,
+        "width": 608,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1152,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "e58b4dfb-daa0-4f3a-99e5-313e06709dd4",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Multilingual RAG System (English & Bangla) — AI Engineer Assessment\n10 Minute School",
+        "height": 80,
+        "width": 832,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "9f0e4761-8732-444f-8ba0-57ef5883ab1a",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        160
+      ],
+      "id": "039be560-dedc-4c2f-ba29-73dd4a04dc0e",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Upload your file here": {
+      "main": [
+        [
+          {
+            "node": "OCR Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OCR Service": {
+      "main": [
+        [
+          {
+            "node": "Preprocess Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Retrieved Chunks": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preprocess Text": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e0f487b6-139b-4416-8124-eb5a95deaaea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "18d2ed59418e5c7d59187c6e257d4db2d27626425830504f187252731a37b54d"
+  },
+  "id": "uEhKUnhW0Ohm4n0h",
+  "tags": []
+}

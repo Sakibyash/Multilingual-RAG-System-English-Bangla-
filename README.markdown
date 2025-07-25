@@ -84,7 +84,7 @@ The system fulfills the requirements of the **AI Engineer (Level-1) Technical As
    ```
 
 3. **Import n8n Workflow**:
-   - Save `rag_system_final (1).json` to your system.
+   - Save `rag_system_.json` to your system.
    - Open n8n (`n8n start`, access at `http://localhost:5678`).
    - Go to Workflows > Import from File and select `rag_system_final (1).json`.
 
